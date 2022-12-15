@@ -1,4 +1,4 @@
-.txt
-.pptx
-.docx
-.exe
+*.txt
+*.pptx
+*.docx
+*.exe
