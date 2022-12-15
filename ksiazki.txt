@@ -1,2 +1,0 @@
-1 felix_net_i_nika rafal_kosik 512 n
-4 dodaj_sobie huj_cie_to 512 t

@@ -4,22 +4,27 @@
 #include <ctype.h>
 #include <conio.h>
 
-void menu();
-void zapisz();
-void wyszukaj();
-void wyswietl();
-void usun();
-
-void usun_spacje();
-void dodaj_spacje();
-int get_id();
-
 typedef struct
 {
     int id, strony;
     char nazwa[100], autor[30], przeczytana;
 
 } book;
+
+void menu();
+void zapisz();
+void wyszukaj();
+void wyswietl();
+void usun();
+
+void usun_spacje(char *znaki);  // usuwa spacje i dodaje podkreślenie
+void dodaj_spacje(char *znaki); // dodaje spacje w miejsce podkreśleń
+void sortuj_id(book *tab, int rozmiarTab);
+void sortuj_nazwa(book *tab, int rozmiarTab);
+void sortuj_strony(book *tab, int rozmiarTab);
+void wypisz(book *tab, int rozmiarTab, int ros); // wypisuje rekordy
+int rozmiar();                                   // zwraca rozmiar
+int id();                                        // zwraca indeks
 
 int main()
 {
@@ -71,8 +76,8 @@ void zapisz()
 
     if (fpointer == NULL)
     {
-        fprintf(stderr, "\nError opened file\n");
-        exit(1);
+        fprintf(stderr, "\nError\n");
+        return 1;
     }
 
     // wczytuje poszczegolne wartosc struktury
@@ -91,7 +96,7 @@ void zapisz()
     while (1)
     {
         printf("Podaj autora ksiazki: \n");
-        scanf(" %29[0-9a-zA-Z ]", ksiazka.autor);
+        scanf(" %[^\n]s", ksiazka.autor);
         if (strlen(ksiazka.autor) > 30)
         {
             printf("Autor nie moze zawierac wiecej niz 30 znakow");
@@ -122,7 +127,7 @@ void zapisz()
         break;
     }
 
-    ksiazka.id = get_id();
+    ksiazka.id = id(); // ustawia id dla dodanej ksiazk
     usun_spacje(ksiazka.nazwa);
     usun_spacje(ksiazka.autor);
 
@@ -135,6 +140,11 @@ void zapisz()
 
 void wyszukaj()
 {
+    if (rozmiar() == 0)
+    {
+        printf("W bazie nie znajduje sie zadna ksiazka\n");
+        return;
+    }
     book szukanaKsiazka;
     char szukanaNazwa[100];
 
@@ -150,11 +160,17 @@ void wyszukaj()
         }
         break;
     }
-    system("cls");
     usun_spacje(szukanaNazwa);
+
     FILE *fpointer;
     fpointer = fopen("ksiazki.txt", "r");
+    if (fpointer == NULL)
+    {
+        fprintf(stderr, "\nError\n");
+        return 1;
+    }
 
+    int znalezione = 1;
     while (fscanf(fpointer, "%d %s %s %d %c", &szukanaKsiazka.id, &szukanaKsiazka.nazwa, &szukanaKsiazka.autor, &szukanaKsiazka.strony, &szukanaKsiazka.przeczytana) > 0)
     {
         if (strcasecmp(szukanaKsiazka.nazwa, szukanaNazwa) == 0)
@@ -166,64 +182,113 @@ void wyszukaj()
             printf("Autor: %s\n", szukanaKsiazka.autor);
             printf("Ilosc stron: %d\n", szukanaKsiazka.strony);
             printf("Przeczytana: %c\n", szukanaKsiazka.przeczytana);
-            fclose(fpointer);
-            return;
+            znalezione = 0;
         }
     }
+    if (znalezione)
+    {
+        printf("Nie znaleziono ksiazki\n");
+    }
 
-    printf("Nie znaleziono ksiazki");
     fclose(fpointer);
     return;
 }
 
 void wyswietl()
 {
+    // sprawdza czy w bazie jest jakis rekord
+    if (rozmiar() == 0)
+    {
+        printf("W bazie nie znajduje sie zadna ksiazka\n");
+        return;
+    }
     FILE *fpointer;
-    book szukanaKsiazka;
+    book szukanaKsiazka[500];
 
     fpointer = fopen("ksiazki.txt", "r");
-
-    while (fscanf(fpointer, "%d %s %s %d %c", &szukanaKsiazka.id, &szukanaKsiazka.nazwa, &szukanaKsiazka.autor, &szukanaKsiazka.strony, &szukanaKsiazka.przeczytana) > 0)
+    if (fpointer == NULL)
     {
-        dodaj_spacje(szukanaKsiazka.nazwa);
-        dodaj_spacje(szukanaKsiazka.autor);
-        printf("ID: %d\n", szukanaKsiazka.id);
-        printf("Nazwa ksiazki: %s\n", szukanaKsiazka.nazwa);
-        printf("Autor: %s\n", szukanaKsiazka.autor);
-        printf("Ilosc stron: %d\n", szukanaKsiazka.strony);
-        printf("Przeczytana: %c\n", szukanaKsiazka.przeczytana);
-        printf("\n");
+        fprintf(stderr, "\nError\n");
+        return 1;
     }
+
+    int i = 0;
+    while (fscanf(fpointer, "%d %s %s %d %c", &szukanaKsiazka[i].id, &szukanaKsiazka[i].nazwa, &szukanaKsiazka[i].autor, &szukanaKsiazka[i].strony, &szukanaKsiazka[i].przeczytana) > 0)
+    {
+        dodaj_spacje(szukanaKsiazka[i].nazwa);
+        dodaj_spacje(szukanaKsiazka[i].autor);
+        i++;
+    }
+
+    int wybor, wybor2;
+    printf("Wybierz wartosc wedlug ktorej chcesz posortowac:\n");
+    printf("1 - ID 2 - Nazwa ksiazki 3 - Ilosc stron\n");
+    scanf("%d", &wybor);
+    printf("1 - Rosnaco 0 - malejaco:\n");
+    scanf("%d", &wybor2);
+    switch (wybor)
+    {
+    case 1:
+        sortuj_id(szukanaKsiazka, i);
+        break;
+    case 2:
+        sortuj_nazwa(szukanaKsiazka, i);
+        break;
+    case 3:
+        sortuj_strony(szukanaKsiazka, i);
+        break;
+
+    default:
+        break;
+    }
+    system("cls");
+
+    wypisz(szukanaKsiazka, i, wybor2);
+
     fclose(fpointer);
     return;
 }
 
 void usun()
 {
+    // sprawdza czy w bazie jest jakis rekord
+    if (rozmiar() == 0)
+    {
+        printf("W bazie nie znajduje sie zadna ksiazka\n");
+        return;
+    }
     book szukanaKsiazka;
 
     FILE *fpointer, *fpointer2;
     fpointer = fopen("ksiazki.txt", "r");
     fpointer2 = fopen("pomocniczy.txt", "w"); // tworze plik pomocniczy
-
+    if (fpointer == NULL)
+    {
+        fprintf(stderr, "\nError\n");
+        return 1;
+    }
+    if (fpointer2 == NULL)
+    {
+        fprintf(stderr, "\nError\n");
+        return 1;
+    }
     int usunto;
     printf("wprowadz id ksiazki ktora chcesz usunac: ");
     scanf("%d", &usunto);
 
     while (fscanf(fpointer, "%d %s %s %d %c", &szukanaKsiazka.id, &szukanaKsiazka.nazwa, &szukanaKsiazka.autor, &szukanaKsiazka.strony, &szukanaKsiazka.przeczytana) > 0)
     {
+
         if (szukanaKsiazka.id != usunto)
         {
             fprintf(fpointer2, "%d %s %s %d %c\n", szukanaKsiazka.id, szukanaKsiazka.nazwa, szukanaKsiazka.autor, szukanaKsiazka.strony, szukanaKsiazka.przeczytana);
         }
-        
     }
     fclose(fpointer);
     fclose(fpointer2);
 
     remove("ksiazki.txt");                   // usuwa originalny plik
     rename("pomocniczy.txt", "ksiazki.txt"); // zmienia nazwe pomocniczego pliku na nazw originalną
-    
 }
 
 void usun_spacje(char *znaki)
@@ -249,19 +314,122 @@ void dodaj_spacje(char *znaki)
     }
     return;
 }
+int id()
+{
+    if (rozmiar() == 0)
+    {
+        return 1;
+    }
+    FILE *fpointer;
+    book szukanaKsiazka;
 
-int get_id()
+    fpointer = fopen("ksiazki.txt", "r");
+    if (fpointer == NULL)
+    {
+        fprintf(stderr, "\nError\n");
+        return 1;
+    }
+
+    while (fscanf(fpointer, "%d %s %s %d %c", &szukanaKsiazka.id, &szukanaKsiazka.nazwa, &szukanaKsiazka.autor, &szukanaKsiazka.strony, &szukanaKsiazka.przeczytana) > 0){}
+    return szukanaKsiazka.id + 1;
+}
+int rozmiar()
 {
     char linia[150];
 
-    FILE *fpointer, *fpointer2;
+    FILE *fpointer;
     fpointer = fopen("ksiazki.txt", "r");
+    if (fpointer == NULL)
+    {
+        fprintf(stderr, "\nError\n");
+        return 1;
+    }
     int i = 0;
-    do
+    while (fgets(linia, 150, fpointer))
     {
         i++;
-    } while (fgets(linia, 150, fpointer));
+    }
 
     fclose(fpointer);
     return i;
+}
+
+void sortuj_id(book *tab, int rozmiarTab)
+{
+    int i, j;
+    book temp;
+    for (i = 0; i < rozmiarTab; i++)
+    {
+        for (j = 0; j < rozmiarTab - i - 1; j++)
+        {
+            if (tab[j].id > tab[j + 1].id)
+            {
+                temp = tab[j];
+                tab[j] = tab[j + 1];
+                tab[j + 1] = temp;
+            }
+        }
+    }
+}
+void sortuj_nazwa(book *tab, int rozmiarTab)
+{
+    int i, j;
+    book temp;
+    for (i = 0; i < rozmiarTab; i++)
+    {
+        for (j = 0; j < rozmiarTab - i - 1; j++)
+        {
+            if (strcmp(tab[j].nazwa, tab[j + 1].nazwa) > 0)
+            {
+                temp = tab[j];
+                tab[j] = tab[j + 1];
+                tab[j + 1] = temp;
+            }
+        }
+    }
+}
+void sortuj_strony(book *tab, int rozmiarTab)
+{
+    int i, j;
+    book temp;
+    for (i = 0; i < rozmiarTab; i++)
+    {
+        for (j = 0; j < rozmiarTab - i - 1; j++)
+        {
+            if (tab[j].strony > tab[j + 1].strony)
+            {
+                temp = tab[j];
+                tab[j] = tab[j + 1];
+                tab[j + 1] = temp;
+            }
+        }
+    }
+}
+
+void wypisz(book *tab, int rozmiarTab, int ros)
+{
+    if (ros)
+    {
+        for (int i = 0; i < rozmiarTab; i++)
+        {
+            printf("ID: %d\n", tab[i].id);
+            printf("Nazwa ksiazki: %s\n", tab[i].nazwa);
+            printf("Autor: %s\n", tab[i].autor);
+            printf("Ilosc stron: %d\n", tab[i].strony);
+            printf("Przeczytana: %c\n", tab[i].przeczytana);
+            printf("\n");
+        }
+    }
+    else
+    {
+        for (int i = rozmiarTab - 1; i >= 0; i--)
+        {
+            printf("ID: %d\n", tab[i].id);
+            printf("Nazwa ksiazki: %s\n", tab[i].nazwa);
+            printf("Autor: %s\n", tab[i].autor);
+            printf("Ilosc stron: %d\n", tab[i].strony);
+            printf("Przeczytana: %c\n", tab[i].przeczytana);
+            printf("\n");
+        }
+    }
 }
