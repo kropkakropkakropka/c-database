@@ -17,13 +17,18 @@ void wyszukaj();
 void wyswietl();
 void usun();
 
-void formatuj_wejscie_wyjscie(char znakDoUsuniecia, char znakDoDodania ,int num_args, ...); 
+void formatuj_wejscie_wyjscie(char znakDoUsuniecia, char znakDoDodania ,int num_args, ...);
 void sortuj_id(book *tab, int rozmiarTab);
 void sortuj_nazwa(book *tab, int rozmiarTab);
 void sortuj_strony(book *tab, int rozmiarTab);
 void wypisz(book *tab, int rozmiarTab, int ros); // wypisuje rekordy
-int rozmiar();                                   // zwraca rozmiar
-int id();                                        // zwraca indeks
+int rozmiar();// zwraca ilosc wierszy w pliku
+int id();// zwraca indeks
+
+void wczytaj_tytul(book *tytul);
+void wczytaj_autor(book *autor);
+void wczytaj_strony(book *ksiazka);
+void wczytaj_przeczytane(book *ksiazka);
 
 int main()
 {
@@ -78,58 +83,16 @@ void zapisz()
         fprintf(stderr, "\nError\n");
         return 1;
     }
-
-    // wczytuje poszczegolne wartosc struktury
-    while (1)
-    {
-        printf("Podaj tytul ksiazki: \n");
-        scanf(" %[^\n]s", ksiazka.nazwa);
-
-        if (strlen(ksiazka.nazwa) > 100 || strlen(ksiazka.nazwa) <= 0)
-        {
-            printf("Tytul ksiażki musi zawierac conajmniej 1 znak i nie wiecej niz 100 znakow");
-            continue;
-        }
-        break;
-    }
-    while (1)
-    {
-        printf("Podaj autora ksiazki: \n");
-        scanf(" %[^\n]s", ksiazka.autor);
-        if (strlen(ksiazka.autor) > 30)
-        {
-            printf("Autor nie moze zawierac wiecej niz 30 znakow");
-            continue;
-        }
-        break;
-    }
-    while (1)
-    {
-        printf("Czy ksiazka zotsala przez ciebie przeczytana?(t-tak, n-nie): \n");
-        scanf(" %c", &ksiazka.przeczytana);
-        if (tolower(ksiazka.przeczytana) != 't' && tolower(ksiazka.przeczytana) != 'n')
-        {
-            printf("Prosze wpisac t albo n");
-            continue;
-        }
-        break;
-    }
-    while (1)
-    {
-        printf("Podaj ilosc stron: \n");
-        scanf("%d", &ksiazka.strony);
-        if (ksiazka.strony <= 0)
-        {
-            printf("Ksiazka musi miec conajmniej jedna strone");
-            continue;
-        }
-        break;
-    }
+    // wczytywanie poszczegolnych wartosc struktury book
+    wczytaj_tytul(&ksiazka.nazwa);
+    wczytaj_autor(&ksiazka.autor);
+    wczytaj_strony(&ksiazka);
+    wczytaj_przeczytane(&ksiazka);
 
     ksiazka.id = id(); // ustawia id dla dodanej ksiazk
-    formatuj_wejscie_wyjscie(32, 95, 2, ksiazka.nazwa, ksiazka.autor);
-
-    fprintf(fpointer, "%d %s %s %d %c\n", ksiazka.id, ksiazka.nazwa, ksiazka.autor, ksiazka.strony, ksiazka.przeczytana); // wpisuje wartosci do pliku
+    formatuj_wejscie_wyjscie(32, 95, 2, ksiazka.nazwa, ksiazka.autor); //formatuje tytuł i autora ksiązki w odpowiedni sposób
+    // wpisuje wartosci do pliku
+    fprintf(fpointer, "%d %s %s %d %c\n", ksiazka.id, ksiazka.nazwa, ksiazka.autor, ksiazka.strony, ksiazka.przeczytana); 
 
     fclose(fpointer);
     system("cls");
@@ -146,18 +109,7 @@ void wyszukaj()
     book szukanaKsiazka;
     char szukanaNazwa[100];
 
-    while (1)
-    {
-        printf("Podaj tytul szukanej ksiazki ksiazki: \n");
-        scanf(" %[^\n]s", szukanaNazwa);
-
-        if (strlen(szukanaKsiazka.nazwa) > 100 || strlen(szukanaKsiazka.nazwa) <= 0)
-        {
-            printf("Tytul ksiażki musi zawierac conajmniej 1 znak i nie wiecej niz 100 znakow");
-            continue;
-        }
-        break;
-    }
+    wczytaj_tytul(&szukanaKsiazka.nazwa);
     formatuj_wejscie_wyjscie(32, 95, 1, szukanaNazwa);
 
     FILE *fpointer;
@@ -200,7 +152,7 @@ void wyswietl()
         return;
     }
     FILE *fpointer;
-    book szukanaKsiazka[500];
+    book* szukanaKsiazka = malloc(sizeof(book) * rozmiar());
 
     fpointer = fopen("ksiazki.txt", "r");
     if (fpointer == NULL)
@@ -242,6 +194,7 @@ void wyswietl()
     wypisz(szukanaKsiazka, i, wybor2);
 
     fclose(fpointer);
+    free(szukanaKsiazka);
     return;
 }
 
@@ -424,4 +377,59 @@ void formatuj_wejscie_wyjscie(char znakDoUsuniecia, char znakDoDodania ,int num_
         }
     }
     return;  
+}
+
+void wczytaj_tytul(book *tytul){
+    while (1)
+    {
+        printf("Podaj tytul ksiazki: \n");
+        scanf(" %[^\n]s", tytul);
+
+        if (strlen(tytul) > 100 || strlen(tytul) <= 0)
+        {
+            printf("Tytul ksiażki musi zawierac conajmniej 1 znak i nie wiecej niz 100 znakow");
+            continue;
+        }
+        break;
+    }
+}
+void wczytaj_autor(book *autor){
+    while (1)
+    {
+        printf("Podaj autora ksiazki: \n");
+        scanf(" %[^\n]s", autor);
+        if (strlen(autor) > 30)
+        {
+            printf("Autor nie moze zawierac wiecej niz 30 znakow");
+            continue;
+        }
+        break;
+    }
+}
+void wczytaj_strony(book *ksiazka){
+    while (1)
+    {
+        printf("Podaj ilosc stron: \n");
+        scanf("%d", &ksiazka->strony);
+        if (ksiazka->strony <= 0)
+        {
+            printf("Ksiazka musi miec conajmniej jedna strone");
+            continue;
+        }
+        break;
+    }
+}
+void wczytaj_przeczytane(book *ksiazka){
+    while (1)
+    {
+        printf("Czy ksiazka zotsala przez ciebie przeczytana?(t-tak, n-nie): \n");
+        scanf(" %c", &ksiazka->przeczytana);
+        if (tolower(ksiazka->przeczytana) != 't' && tolower(ksiazka->przeczytana) != 'n')
+        {
+            printf("%c\n", ksiazka->przeczytana);
+            printf("Prosze wpisac t albo n");
+            continue;
+        }
+        break;
+    }
 }
