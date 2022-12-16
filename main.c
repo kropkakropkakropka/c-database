@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
 #include <conio.h>
+#include <stdarg.h>
 
 typedef struct
 {
@@ -17,8 +17,7 @@ void wyszukaj();
 void wyswietl();
 void usun();
 
-void usun_spacje(char *znaki);  // usuwa spacje i dodaje podkreślenie
-void dodaj_spacje(char *znaki); // dodaje spacje w miejsce podkreśleń
+void formatuj_wejscie_wyjscie(char znakDoUsuniecia, char znakDoDodania ,int num_args, ...); 
 void sortuj_id(book *tab, int rozmiarTab);
 void sortuj_nazwa(book *tab, int rozmiarTab);
 void sortuj_strony(book *tab, int rozmiarTab);
@@ -128,8 +127,7 @@ void zapisz()
     }
 
     ksiazka.id = id(); // ustawia id dla dodanej ksiazk
-    usun_spacje(ksiazka.nazwa);
-    usun_spacje(ksiazka.autor);
+    formatuj_wejscie_wyjscie(32, 95, 2, ksiazka.nazwa, ksiazka.autor);
 
     fprintf(fpointer, "%d %s %s %d %c\n", ksiazka.id, ksiazka.nazwa, ksiazka.autor, ksiazka.strony, ksiazka.przeczytana); // wpisuje wartosci do pliku
 
@@ -160,7 +158,7 @@ void wyszukaj()
         }
         break;
     }
-    usun_spacje(szukanaNazwa);
+    formatuj_wejscie_wyjscie(32, 95, 1, szukanaNazwa);
 
     FILE *fpointer;
     fpointer = fopen("ksiazki.txt", "r");
@@ -175,8 +173,7 @@ void wyszukaj()
     {
         if (strcasecmp(szukanaKsiazka.nazwa, szukanaNazwa) == 0)
         {
-            dodaj_spacje(szukanaKsiazka.nazwa);
-            dodaj_spacje(szukanaKsiazka.autor);
+            formatuj_wejscie_wyjscie(95, 32, 2, szukanaKsiazka.nazwa, szukanaKsiazka.autor);
             printf("ID: %d\n", szukanaKsiazka.id);
             printf("Nazwa ksiazki: %s\n", szukanaKsiazka.nazwa);
             printf("Autor: %s\n", szukanaKsiazka.autor);
@@ -215,8 +212,7 @@ void wyswietl()
     int i = 0;
     while (fscanf(fpointer, "%d %s %s %d %c", &szukanaKsiazka[i].id, &szukanaKsiazka[i].nazwa, &szukanaKsiazka[i].autor, &szukanaKsiazka[i].strony, &szukanaKsiazka[i].przeczytana) > 0)
     {
-        dodaj_spacje(szukanaKsiazka[i].nazwa);
-        dodaj_spacje(szukanaKsiazka[i].autor);
+        formatuj_wejscie_wyjscie(95, 32, 2, szukanaKsiazka[i].nazwa, szukanaKsiazka[i].autor);
         i++;
     }
 
@@ -291,29 +287,6 @@ void usun()
     rename("pomocniczy.txt", "ksiazki.txt"); // zmienia nazwe pomocniczego pliku na nazw originalną
 }
 
-void usun_spacje(char *znaki)
-{
-    for (int i = 0; i < strlen(znaki); i++)
-    {
-        if (isspace(znaki[i]))
-        {
-            znaki[i] = 95;
-        }
-    }
-    return;
-}
-
-void dodaj_spacje(char *znaki)
-{
-    for (int i = 0; i < strlen(znaki); i++)
-    {
-        if (znaki[i] == 95)
-        {
-            znaki[i] = 32;
-        }
-    }
-    return;
-}
 int id()
 {
     if (rozmiar() == 0)
@@ -330,7 +303,9 @@ int id()
         return 1;
     }
 
-    while (fscanf(fpointer, "%d %s %s %d %c", &szukanaKsiazka.id, &szukanaKsiazka.nazwa, &szukanaKsiazka.autor, &szukanaKsiazka.strony, &szukanaKsiazka.przeczytana) > 0){}
+    while (fscanf(fpointer, "%d %s %s %d %c", &szukanaKsiazka.id, &szukanaKsiazka.nazwa, &szukanaKsiazka.autor, &szukanaKsiazka.strony, &szukanaKsiazka.przeczytana) > 0)
+    {
+    }
     return szukanaKsiazka.id + 1;
 }
 int rozmiar()
@@ -432,4 +407,21 @@ void wypisz(book *tab, int rozmiarTab, int ros)
             printf("\n");
         }
     }
+}
+
+void formatuj_wejscie_wyjscie(char znakDoUsuniecia, char znakDoDodania ,int num_args, ...){
+    va_list args;
+    va_start(args, num_args);
+    for (int i = 0; i < num_args; i++)
+    {
+        char *arg = va_arg(args, char *);
+        for (int j = 0; j < strlen(arg); j++)
+        {
+            if (arg[j] == znakDoUsuniecia)
+            {
+                arg[j] = znakDoDodania;
+            }
+        }
+    }
+    return;  
 }
